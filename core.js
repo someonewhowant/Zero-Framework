@@ -1,96 +1,63 @@
-/*
- * h function - creates a virtual DOM node
- * @param {string} tag - HTML tag name
- * @param {object} props - HTML attributes
- * @param {...*} children - Child nodes
- * @returns {object} Virtual DOM node
- */
-function h(tag, props, ...children) {
-  return { tag, props: props || {}, children: children.flat() };
-}
+function diffChildren(parent, newChildren, oldChildren) {
+    // Keyed reconciliation
+    const oldKeyedChildren = {};
+    const newKeyedChildren = {};
+    const oldUnkeyedChildren = [];
+    const newUnkeyedChildren = [];
 
+    oldChildren.forEach(child => {
+        const key = child.props.key;
+        if (key != null) {
+            oldKeyedChildren[key] = child;
+        } else {
+            oldUnkeyedChildren.push(child);
+        }
+    });
+    
+    newChildren.forEach(child => {
+        const key = child.props.key;
+        if (key != null) {
+            newKeyedChildren[key] = child;
+        } else {
+            newUnkeyedChildren.push(child);
+        }
+    });
 
-class Zero {
-  construtor(props) {
-    this.props = props || {};
-    this.state = {};
-    this._vdom = null;
-    this._dom = null;
-    this._updateQueued = false;
-
-  }
-
-  //методы жизненного цикла
-  onCreated() { }
-  onMounted() { }
-  onUpdated() { }
-  onUnmounted() { }
-
-  //метод рендера
-  render() {
-    throw new Error("Component must implement render method");
-  }
-
-
-
-
-}
-/*
- *createElement - creates a DOM node from a virtual DOM node
- *@param {object} vnode - Virtual DOM node
- *@returns {Node} DOM node
- */
-function createElement(vnode) {
-  if (typeof vnode === 'string' || typeof vnode === 'number') {
-    return document.createTextNode(vnode);
-  }
-
-  const { tag, props, children } = vnode;
-
-  const el = document.createElement(tag);
-
-  updateProps(el, props);
-
-  children.forEach(child => {
-    el.appendChild(createElement(child));
-  })
-
-  //сохраняем vnode для последующего сравнения
-  el._vdom = vnode;
-
-  return el;
-}
-
-/*
- *updateProps - updates the properties of a DOM node
- *@param {Node} el - DOM node
- *@param {object} newProps - New properties
- *@param {object} oldProps - Old properties
- *@returns {void}
- */
-function updateProps(el, newProps = {}, oldProps = {}) {
-  const updated = { ...oldProps, ...newProps };
-
-  Object.keys(updated).forEach(key => {
-    const oldValue = oldProps[key];
-    const newValue = newProps[key];
-
-    if (newValue === oldValue) return;
-
-    if (key.startsWith('on')) {
-      const event = key.slice(2).toLowerCase();
-
-      if (oldValue) {
-        el.removeEventListener(event, oldValue);
-      }
-
-      if (newValue) {
-        el.addEventListener(event, newValue);
-      }
-    } else if (newValue === null || newValue === false) {
-      el.removeAttribute(key);
-    } else {
-      el.setAttribute(key, newValue);
+    // Diff unkeyed children (simple, by index)
+    const maxUnkeyedLength = Math.max(oldUnkeyedChildren.length, newUnkeyedChildren.length);
+    for (let i = 0; i < maxUnkeyedLength; i++) {
+        diff(parent, newUnkeyedChildren[i], oldUnkeyedChildren[i], i);
     }
-  })
+    
+    // Diff keyed children
+    const parentEl = parent;
+    const oldKeyedMap = new Map();
+    Array.from(parentEl.children).forEach(child => {
+        const vdom = child._vdom;
+        if (vdom && vdom.props && vdom.props.key) {
+            oldKeyedMap.set(vdom.props.key, child);
+        }
+    });
+
+    let lastIndex = 0;
+    for (const key in newKeyedChildren) {
+        const newVChild = newKeyedChildren[key];
+        const oldVChild = oldKeyedChildren[key];
+        
+        if (oldVChild) {
+            // Patch existing
+            const el = oldKeyedMap.get(key);
+            updateProps(el, newVChild.props, oldVChild.props);
+            diffChildren(el, newVChild.children, oldVChild.children);
+            el._vdom = newVChild;
+            oldKeyedMap.delete(key);
+        } else {
+            // Add new
+            const newEl = createElement(newVChild);
+            parentEl.appendChild(newEl);
+        }
+    }
+    
+    // Remove old keyed children that no longer exist
+    oldKeyedMap.forEach(el => el.remove());
 }
