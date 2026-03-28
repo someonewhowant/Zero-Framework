@@ -1,6 +1,6 @@
 import { Zero, h, mount } from './zero.js';
 
-function renderExpenseItem(props) {
+function ExpenseItem(props) {
     return h(
         'li',
         { class: 'expense-item', key: props.id },
@@ -8,10 +8,10 @@ function renderExpenseItem(props) {
         h('span', { class: 'expense-amount' }, `$${props.amount.toFixed(2)}`),
         h(
             'button',
-            { 
+            {
                 class: 'delete-btn',
-                onclick: () => props.onDelete(props.id) 
-            },'×'
+                onclick: () => props.onDelete(props.id)
+            }, '×'
         )
     );
 }
@@ -29,7 +29,7 @@ class ExpenseTrackerApp extends Zero {
             description: '',
             amount: ''
         };
-        
+
         this.handleDelete = this.handleDelete.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
     }
@@ -37,7 +37,7 @@ class ExpenseTrackerApp extends Zero {
     handleDelete(id) {
         this.state.expenses = this.state.expenses.filter(exp => exp.id !== id);
     }
-    
+
     handleSubmit(e) {
         e.preventDefault();
         if (!this.state.description || !this.state.amount) return;
@@ -49,7 +49,7 @@ class ExpenseTrackerApp extends Zero {
         };
 
         this.state.expenses = [...this.state.expenses, newExpense];
-        
+
         this.state.description = '';
         this.state.amount = '';
     }
@@ -61,7 +61,7 @@ class ExpenseTrackerApp extends Zero {
             'div',
             { class: 'tracker-container' },
             h('h1', { class: 'main-title' }, 'Трекер расходов'),
-            
+
             h(
                 'form',
                 { class: 'expense-form', onsubmit: this.handleSubmit },
@@ -86,14 +86,14 @@ class ExpenseTrackerApp extends Zero {
             h(
                 'ul',
                 { class: 'expense-list' },
-                ...this.state.expenses.map(expense => 
-                    renderExpenseItem({ 
-                        ...expense, 
-                        onDelete: this.handleDelete 
+                ...this.state.expenses.map(expense =>
+                    h(ExpenseItem, {
+                        ...expense,
+                        onDelete: this.handleDelete
                     })
                 )
             ),
-            
+
             h(
                 'div',
                 { class: 'total-container' },
@@ -102,7 +102,7 @@ class ExpenseTrackerApp extends Zero {
             )
         );
     }
-    
+
     onMounted() {
         console.log("Трекер расходов смонтирован!");
     }

@@ -15,7 +15,7 @@ body {
     max-width: 500px;
     background-color: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 6px franchising-bfee.com8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     padding: 2rem;
 }
 
@@ -60,6 +60,7 @@ body {
 .expense-form button:hover {
     background-color: #0056b3;
 }
+
 .expense-list {
     list-style-type: none;
     padding: 0;
@@ -84,7 +85,8 @@ body {
 
 .expense-amount {
     font-weight: 500;
-    color: #d9534f; /* Red for expenses */
+    color: #d9534f;
+    /* Red for expenses */
     margin: 0 1rem;
 }
 
@@ -115,6 +117,6 @@ body {
 }
 
 .total-amount {
-    color: #28a745; /* Green for total */
+    color: #28a745;
+    /* Green for total */
 }
-
