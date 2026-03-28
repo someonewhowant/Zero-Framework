@@ -2,7 +2,6 @@ export  function h(tag, props, ...children) {
     return { tag, props: props || {}, children: children.flat() };
 }
 
-
 export class Zero {
     constructor(props) {
         this.props = props || {};
@@ -12,19 +11,15 @@ export class Zero {
         this._updateQueued = false;
     }
 
-    // --- Lifecycle Method Stubs ---
     onCreated() {}
     onMounted(element) {}
     onUpdated() {}
-    onUnmounted() {}
-
-    // --- Core Methods ---
+    onUnmounted() {} 
     render() {
         throw new Error("Component must implement a render() method.");
     }
 }
 
-// 3. DOM Creation
 function createElement(vnode) {
     if (typeof vnode === 'string' || typeof vnode === 'number') {
         return document.createTextNode(vnode.toString());
@@ -109,7 +104,6 @@ function diff(parent, newVNode, oldVNode, index = 0) {
 
 
 function diffChildren(parent, newChildren, oldChildren) {
-    // Keyed reconciliation
     const oldKeyedChildren = {};
     const newKeyedChildren = {};
     const oldUnkeyedChildren = [];
@@ -133,13 +127,11 @@ function diffChildren(parent, newChildren, oldChildren) {
         }
     });
 
-    
     const maxUnkeyedLength = Math.max(oldUnkeyedChildren.length, newUnkeyedChildren.length);
     for (let i = 0; i < maxUnkeyedLength; i++) {
         diff(parent, newUnkeyedChildren[i], oldUnkeyedChildren[i], i);
     }
     
-    // Diff keyed children
     const parentEl = parent;
     const oldKeyedMap = new Map();
     Array.from(parentEl.children).forEach(child => {
@@ -167,46 +159,38 @@ function diffChildren(parent, newChildren, oldChildren) {
             parentEl.appendChild(newEl);
         }
     }
-    
-    // Remove old keyed children that no longer exist
+
     oldKeyedMap.forEach(el => el.remove());
 }
 
 
 
 export function mount(component, target) {
-    // Lifecycle: onCreated
     component.onCreated();
-
-    // Initial render
+    
     const vdom = component.render();
+    
     const dom = createElement(vdom);
 
-    // Store references on the component instance
     component._vdom = vdom;
     component._dom = dom;
 
     target.innerHTML = ''; // Clear the target element
     target.appendChild(dom);
 
-    // Lifecycle: onMounted
     component.onMounted(dom);
 
-    // Create the reactive proxy for the state
     component.state = new Proxy(component.state || {}, {
         set: (state, property, value) => {
             state[property] = value;
 
             if (!component._updateQueued) {
                 component._updateQueued = true;
-                // Batch updates to the next animation frame
                 requestAnimationFrame(() => {
                     const newVdom = component.render();
                     diff(target, newVdom, component._vdom);
                     component._vdom = newVdom;
                     component._updateQueued = false;
-                    
-                    // Lifecycle: onUpdated
                     component.onUpdated();
                 });
             }
