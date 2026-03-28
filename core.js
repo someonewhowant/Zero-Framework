@@ -1,5 +1,50 @@
+function diff(parent, newVNode, oldVNode, index = 0) {
+    const el = parent.childNodes[index];
+    if (oldVNode == null) {
+        const newEl = createElement(newVNode);
+        parent.appendChild(newEl);
+        // Note: onMounted for components is handled in mount()
+        return;
+    }
+
+    
+    if (newVNode == null) {
+        
+        const component = oldVNode.tag;
+        if (component instanceof Zero) {
+            component.onUnmounted();
+        }
+        el.remove();
+        return;
+    }
+
+    const isDifferent =
+        typeof newVNode !== typeof oldVNode ||
+        (typeof newVNode === 'string' && newVNode !== oldVNode) ||
+        oldVNode.tag !== newVNode.tag;
+
+    if (isDifferent) {
+        const component = oldVNode.tag;
+        if (component instanceof Zero) {
+            component.onUnmounted();
+        }
+        const newEl = createElement(newVNode);
+        parent.replaceChild(newEl, el);
+        // Note: onMounted for components is handled in mount()
+        return;
+    }
+
+    // Case 4: Same tag, update props and diff children
+    updateProps(el, newVNode.props, oldVNode.props);
+    diffChildren(el, newVNode.children, oldVNode.children);
+
+    // Update the vnode reference
+    el._vdom = newVNode;
+}
+
+
 function diffChildren(parent, newChildren, oldChildren) {
-    // Keyed reconciliation
+    
     const oldKeyedChildren = {};
     const newKeyedChildren = {};
     const oldUnkeyedChildren = [];
@@ -23,13 +68,13 @@ function diffChildren(parent, newChildren, oldChildren) {
         }
     });
 
-    // Diff unkeyed children (simple, by index)
+    
     const maxUnkeyedLength = Math.max(oldUnkeyedChildren.length, newUnkeyedChildren.length);
     for (let i = 0; i < maxUnkeyedLength; i++) {
         diff(parent, newUnkeyedChildren[i], oldUnkeyedChildren[i], i);
     }
     
-    // Diff keyed children
+
     const parentEl = parent;
     const oldKeyedMap = new Map();
     Array.from(parentEl.children).forEach(child => {
@@ -58,6 +103,8 @@ function diffChildren(parent, newChildren, oldChildren) {
         }
     }
     
-    // Remove old keyed children that no longer exist
     oldKeyedMap.forEach(el => el.remove());
 }
+
+
+
